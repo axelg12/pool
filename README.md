@@ -45,6 +45,22 @@ To use the app full screen on the tablet, open it in Chrome and select
 The app has no login, so anyone who can open the URL can add players and
 delete games.
 
+`vercel.json` runs the functions in Frankfurt (`fra1`), the same region as the
+Neon database.
+
+### Import games from the old DoPool app
+
+`scripts/import-dopool.js` converts the old app's SQLite database to SQL for
+this schema. It keeps the old ids, so run it on an empty database:
+
+```sh
+node scripts/import-dopool.js PATH_TO/dopool.sqlite > import.sql
+psql "$DATABASE_URL" -f import.sql
+```
+
+To import again, for example at cutover, first empty the tables in the Neon SQL
+editor with `truncate games, users restart identity;`.
+
 ### Use the real database locally
 
 ```sh
