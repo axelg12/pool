@@ -6,9 +6,11 @@ bar, and a game timer you can read from across the room.
 
 The app has the following tabs:
 
-- Game: pick two players, start the timer, then end the game and tap the
-  winner, or cancel to discard it. The game keeps running when you switch
-  tabs or reload the page.
+- Game: pick two players and tap **Next**, then tap **Start game** when you're
+  ready to break. **Pause** stops the timer, and paused time doesn't count
+  toward the game time. End the game and tap the winner, or cancel to discard
+  it. The app then shows how many Elo points each player gained or lost. The
+  game keeps running when you switch tabs or reload the page.
 - Leaderboard: Elo, games played, wins, losses, and win percentage for each
   player. Tap a player to see who they beat most and who beats them most.
 - History: the 50 most recent games, newest first. Tap **Delete** to remove a
