@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { computeStats } from './stats.js';
+import { computeStats, duration } from './stats.js';
 import './style.css';
 
 async function api(path, method = 'GET', body) {
@@ -270,7 +270,7 @@ function PlayerModal({ player: p, name, onClose }) {
       <div className="sheet">
         <h2>{p.name}</h2>
         <p className="muted">
-          {Math.round(p.elo)} Elo · {p.wins}W {p.losses}L · {winPct(p)} · avg game {p.played ? clock(p.time / p.played) : '–'}
+          {Math.round(p.elo)} Elo · {p.wins}W {p.losses}L · {winPct(p)} · avg game {p.timed ? clock(p.time / p.timed) : '–'}
         </p>
         <div className="rivals">
           {top('wins', 'Most wins against')}
@@ -298,7 +298,8 @@ function History({ games, name, onDelete }) {
             <div>
               <b>{name(g.winner_id)}</b> <span className="muted">beat</span> <b>{name(g.loser_id)}</b>
               <div className="muted">
-                {when(g.ended_at)} · {clock(Date.parse(g.ended_at) - Date.parse(g.started_at))}
+                {when(g.ended_at)}
+                {duration(g) && ` · ${clock(duration(g))}`}
               </div>
             </div>
             <button className="delete" onClick={() => remove(g)}>

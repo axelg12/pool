@@ -15,6 +15,10 @@ The app has the following tabs:
   wrongly recorded game.
 - Players: add players, and tap a player to rename them.
 
+A game shorter than a minute was entered after it was played instead of
+timed. Its result counts for Elo and records, but the app ignores its time:
+the History tab shows no time for it, and average game time leaves it out.
+
 ## Run locally
 
 ```sh
