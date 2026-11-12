@@ -34,16 +34,21 @@ function storedGame() {
   }
 }
 
+// Resuming moves startedAt forward by the length of the pause, so neither the
+// timer nor the saved game counts paused time.
+const resume = (g) => (g.pausedAt ? { ...g, startedAt: g.startedAt + Date.now() - g.pausedAt, pausedAt: undefined } : g);
+
 const TABS = { game: 'Game', leaderboard: 'Leaderboard', history: 'History', players: 'Players' };
 
 function App() {
   const [tab, setTab] = useState('game');
   const [users, setUsers] = useState([]);
   const [games, setGames] = useState([]);
-  const [game, setGame] = useState(storedGame); // { players: [id, id], startedAt, endedAt? } in epoch ms
+  // { players: [id, id], startedAt?, pausedAt?, endedAt? } in epoch ms. No startedAt until Start game.
+  const [game, setGame] = useState(storedGame);
   const [now, setNow] = useState(Date.now);
   const [error, setError] = useState('');
-  const [saved, setSaved] = useState('');
+  const [result, setResult] = useState(null); // the last saved game's Elo changes
 
   const load = () =>
     Promise.all([api('users'), api('games')])
@@ -68,7 +73,7 @@ function App() {
   }, [game]);
 
   const name = (id) => users.find((u) => u.id === id)?.name ?? '…';
-  const elapsed = game ? (game.endedAt ?? now) - game.startedAt : 0;
+  const elapsed = game?.startedAt ? (game.endedAt ?? game.pausedAt ?? now) - game.startedAt : 0;
 
   // Runs a server change and shows any error in the banner. Returns true on success.
   async function run(change) {
@@ -110,8 +115,18 @@ function App() {
         started_at: new Date(game.startedAt).toISOString(),
         ended_at: new Date(game.endedAt).toISOString(),
       });
+      // Each player's change is their rating with this game minus their rating without it.
+      const elo = (gs) => new Map(computeStats(users, gs).map((p) => [p.id, p.elo]));
+      const [before, after] = [elo(games), elo([...games, g])];
       setGames((gs) => [...gs, g]);
-      setSaved(`${name(winnerId)} beat ${name(loserId)} in ${clock(elapsed)}`);
+      setResult({
+        time: elapsed,
+        players: [winnerId, loserId].map((id) => ({
+          id,
+          elo: Math.round(after.get(id)),
+          change: Math.round(after.get(id) - before.get(id)),
+        })),
+      });
       setGame(null);
     });
 
@@ -123,7 +138,7 @@ function App() {
             {error} · tap to dismiss
           </button>
         )}
-        {tab === 'game' && <Game {...{ users, game, setGame, elapsed, name, saved, setSaved }} onSave={saveGame} />}
+        {tab === 'game' && <Game {...{ users, game, setGame, elapsed, name, result, setResult }} onSave={saveGame} />}
         {tab === 'leaderboard' && <Leaderboard stats={computeStats(users, games)} name={name} />}
         {tab === 'history' && <History games={games} name={name} onDelete={deleteGame} />}
         {tab === 'players' && <Players users={users} onAdd={addUser} onRename={renameUser} />}
@@ -132,7 +147,11 @@ function App() {
         {Object.entries(TABS).map(([key, label]) => (
           <button key={key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>
             {label}
-            {key === 'game' && game && <small>● {clock(elapsed)}</small>}
+            {key === 'game' && game && (
+              <small>
+                {game.pausedAt ? '❚❚' : '●'} {clock(elapsed)}
+              </small>
+            )}
           </button>
         ))}
       </nav>
@@ -140,25 +159,47 @@ function App() {
   );
 }
 
-function Game({ users, game, setGame, elapsed, name, saved, setSaved, onSave }) {
+function Game({ users, game, setGame, elapsed, name, result, setResult, onSave }) {
   const [picked, setPicked] = useState([]);
   const [saving, setSaving] = useState(false);
+
+  if (result) {
+    const [w, l] = result.players;
+    return (
+      <section className="live">
+        <h1>
+          {name(w.id)} <span>beat</span> {name(l.id)}
+        </h1>
+        <p className="muted">Game time {clock(result.time)}</p>
+        <div className="row">
+          {result.players.map((p, i) => (
+            <div key={p.id} className="result">
+              <b>{name(p.id)}</b>
+              <div className={`change ${i ? 'loss' : 'gain'}`}>{p.change.toLocaleString([], { signDisplay: 'exceptZero' })}</div>
+              <span className="muted">{p.elo} Elo</span>
+            </div>
+          ))}
+        </div>
+        <button className="big primary done" onClick={() => setResult(null)}>
+          Done
+        </button>
+      </section>
+    );
+  }
 
   if (!game) {
     const toggle = (id) =>
       setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < 2 ? [...p, id] : p));
-    const start = () => {
-      setGame({ players: picked, startedAt: Date.now() });
+    const next = () => {
+      setGame({ players: picked });
       setPicked([]);
-      setSaved('');
     };
     return (
       <section>
-        {saved && <p className="saved">✓ Saved: {saved}</p>}
         <header>
           <h1>{picked.length ? `${name(picked[0])} vs ${picked[1] ? name(picked[1]) : '…'}` : 'Who is playing?'}</h1>
-          <button className="big primary" disabled={picked.length < 2} onClick={start}>
-            Start game
+          <button className="big primary" disabled={picked.length < 2} onClick={next}>
+            Next
           </button>
         </header>
         {users.length < 2 && <p className="muted">Add at least two players in the Players tab.</p>}
@@ -175,20 +216,45 @@ function Game({ users, game, setGame, elapsed, name, saved, setSaved, onSave }) 
 
   const [a, b] = game.players;
   if (!game.endedAt) {
+    // Before the timer starts, Back returns to the player picker with the same two players picked.
+    const back = () => {
+      setPicked(game.players);
+      setGame(null);
+    };
     return (
       <section className="live">
         <h1>
           {name(a)} <span>vs</span> {name(b)}
         </h1>
-        <div className="timer">{clock(elapsed)}</div>
-        <div className="row">
-          <button className="big danger" onClick={() => confirm('Discard this game? It will not be saved.') && setGame(null)}>
-            Cancel game
-          </button>
-          <button className="big primary" onClick={() => setGame({ ...game, endedAt: Date.now() })}>
-            End game
-          </button>
-        </div>
+        <div className={`timer ${game.pausedAt ? 'muted' : ''}`}>{clock(elapsed)}</div>
+        {game.startedAt ? (
+          <div className="row">
+            <button className="big danger" onClick={() => confirm('Discard this game? It will not be saved.') && setGame(null)}>
+              Cancel game
+            </button>
+            {game.pausedAt ? (
+              <button className="big" onClick={() => setGame(resume(game))}>
+                Resume
+              </button>
+            ) : (
+              <button className="big" onClick={() => setGame({ ...game, pausedAt: Date.now() })}>
+                Pause
+              </button>
+            )}
+            <button className="big primary" onClick={() => setGame({ ...resume(game), endedAt: Date.now() })}>
+              End game
+            </button>
+          </div>
+        ) : (
+          <div className="row">
+            <button className="big" onClick={back}>
+              ← Back
+            </button>
+            <button className="big primary" onClick={() => setGame({ ...game, startedAt: Date.now() })}>
+              Start game
+            </button>
+          </div>
+        )}
       </section>
     );
   }

@@ -30,7 +30,6 @@ h1 { font-size: 1.6rem; margin: 0; }
 h1 span { color: var(--muted); font-weight: 400; }
 h2 { font-size: 1.5rem; margin: 0 0 0.25rem; }
 .muted { color: var(--muted); }
-.saved { color: var(--accent); font-weight: 700; margin: 0 0 0.5rem; }
 
 button { font: inherit; color: inherit; cursor: pointer; }
 button:disabled { opacity: 0.35; cursor: default; }
@@ -96,6 +95,12 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 }
 .live .row .big { min-height: max(3.5rem, 16vh); font-size: 1.3rem; }
 .live .row .winner { min-height: max(4.5rem, 32vh); background: var(--accent); color: #fff; font-size: 1.6rem; }
+.result { padding: 1rem; border-radius: 0.75rem; background: var(--panel); box-shadow: var(--shadow); }
+.result b { font-size: 1.3rem; }
+.change { font-size: min(15vw, 18vh); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.gain { color: var(--accent); }
+.loss { color: var(--danger); }
+.done { min-width: 50%; margin-top: 4vh; }
 
 table { width: 100%; border-collapse: collapse; font-size: 1.05rem; }
 th, td { padding: 0.65rem 0.5rem; text-align: center; font-variant-numeric: tabular-nums; }
