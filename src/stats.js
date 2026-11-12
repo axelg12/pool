@@ -1,7 +1,6 @@
-// Chess-style (FIDE) Elo. README.md explains the formula and the constants.
-export const START_ELO = 1200;
-export const PROVISIONAL_GAMES = 30;
-export const kFactor = (played) => (played < PROVISIONAL_GAMES ? 40 : 20);
+// Elo with the same constants as the old DoPool app. README.md explains it.
+export const START_ELO = 1000;
+export const K = 32;
 export const expected = (rating, opponent) => 1 / (1 + 10 ** ((opponent - rating) / 400));
 
 // Ratings are never stored. They are rebuilt by replaying every game in the
@@ -15,9 +14,11 @@ export function computeStats(users, games) {
   for (const g of ordered) {
     const w = players.get(g.winner_id);
     const l = players.get(g.loser_id);
-    const e = expected(w.elo, l.elo); // winner's expected score; the loser's is 1 - e
-    w.elo += kFactor(w.played) * (1 - e); // winner scored 1
-    l.elo -= kFactor(l.played) * (1 - e); // loser scored 0
+    // The winner scored 1 against an expected score of e, so gains K × (1 − e).
+    // The loser loses the same amount.
+    const change = K * (1 - expected(w.elo, l.elo));
+    w.elo += change;
+    l.elo -= change;
     const ms = Date.parse(g.ended_at) - Date.parse(g.started_at);
     for (const [p, opponent, key] of [[w, l, 'wins'], [l, w, 'losses']]) {
       p.played++;

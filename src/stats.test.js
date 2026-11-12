@@ -11,22 +11,24 @@ const game = (winner, loser, minute) => ({
 });
 const byId = (games) => Object.fromEntries(computeStats(users, games).map((p) => [p.id, p]));
 
-test('new players at equal rating move 20 points (K=40, expected score 0.5)', () => {
+test('equal ratings move 16 points (K=32, expected score 0.5)', () => {
   const s = byId([game(1, 2, 0)]);
-  assert.equal(s[1].elo, 1220);
-  assert.equal(s[2].elo, 1180);
-  assert.equal(s[3].elo, 1200);
+  assert.equal(s[1].elo, 1016);
+  assert.equal(s[2].elo, 984);
+  assert.equal(s[3].elo, 1000);
 });
 
-test('K drops from 40 to 20 after 30 games', () => {
-  const thirty = Array.from({ length: 30 }, (_, i) => (i % 2 ? game(1, 2, i) : game(2, 1, i)));
-  const before = byId(thirty);
-  const after = byId([...thirty, game(1, 2, 30)]);
-  assert.ok(Math.abs(after[1].elo - before[1].elo - 20 * (1 - expected(before[1].elo, before[2].elo))) < 1e-9);
+test('an upset earns more than an expected win, and the winner gains what the loser loses', () => {
+  const lead = Array.from({ length: 5 }, (_, i) => game(1, 2, i)); // player 1 pulls ahead
+  const before = byId(lead);
+  const upset = byId([...lead, game(2, 1, 5)]);
+  const expectedWin = byId([...lead, game(1, 2, 5)]);
+  assert.ok(upset[2].elo - before[2].elo > expectedWin[1].elo - before[1].elo);
+  assert.ok(Math.abs(upset[2].elo - before[2].elo + (upset[1].elo - before[1].elo)) < 1e-9);
 });
 
-test('README example: 1300 vs 1200 expected score is about 0.64', () => {
-  assert.ok(Math.abs(expected(1300, 1200) - 0.64) < 0.001);
+test('README example: 1100 vs 1000 expected score is about 0.64', () => {
+  assert.ok(Math.abs(expected(1100, 1000) - 0.64) < 0.001);
 });
 
 test('records, head-to-head and time; games replay in end order', () => {

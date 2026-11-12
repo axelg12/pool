@@ -71,10 +71,11 @@ npx vercel dev
 
 ## How Elo ratings work
 
-The leaderboard ranks players by an Elo rating that follows the FIDE (chess)
-rules. Each player has a number, and the gap between two players' numbers
-predicts who wins. After each game, the winner takes points from the loser.
-Beating a stronger player earns more points than beating a weaker one.
+The leaderboard ranks players by an Elo rating, the system chess uses, with the
+same constants as the old DoPool app. Each player has a number, and the gap
+between two players' numbers predicts who wins. After each game, the winner
+takes points from the loser. Beating a stronger player earns more points than
+beating a weaker one.
 
 ### Expected score
 
@@ -108,28 +109,24 @@ R'_A = R_A + K × (S_A − E_A)
 
 | Constant | Value | Why |
 | --- | --- | --- |
-| Starting rating | 1200 | A common starting point. Only the gaps between ratings matter. |
-| K for a player's first 30 games | 40 | New ratings move fast, so they reach the right level sooner. FIDE uses the same rule. |
-| K after 30 games | 20 | Established ratings move slower, so one lucky game doesn't swing the table. |
+| Starting rating | 1000 | Matches DoPool. Only the gaps between ratings matter. |
+| K | 32 | Matches DoPool. One game moves a rating by at most 32 points. |
 
-FIDE also lowers K to 10 for players rated 2400 or more. The app leaves out
-that rule because an office league doesn't produce ratings that high.
+Every player uses the same K, no matter how many games they've played. The
+winner gains exactly what the loser loses, so the average rating stays 1000.
 
-Each player uses their own K-factor. When a new player meets an established
-player, the new player's rating moves twice as far as the established
-player's rating. This matches FIDE, and it means the total of all ratings
-doesn't stay fixed.
+Chess federations use a lower K, 10 to 40, because their players play
+hundreds of rated games. A K of 32 lets office ratings settle after fewer
+games.
 
 ### Examples
 
-- Two new players, both 1200: each expects `0.5`. With K = 40, the winner
-  gains `40 × (1 − 0.5) = 20` points and the loser drops 20.
-- Two established players, 1300 against 1200: the 1300 player expects `0.64`.
-  If the favorite wins, the favorite gains `20 × 0.36 ≈ 7` and the underdog
-  drops 7. If the underdog wins, the underdog gains `20 × 0.64 ≈ 13` and the
-  favorite drops 13.
-- A new player beats an established player, both 1200: the new player gains
-  `40 × 0.5 = 20` and the established player drops `20 × 0.5 = 10`.
+- Two players at 1000: each expects `0.5`. The winner gains
+  `32 × (1 − 0.5) = 16` points, and the loser drops 16.
+- A 1100 player against a 1000 player: the 1100 player expects `0.64`. If the
+  favorite wins, the favorite gains `32 × 0.36 ≈ 12`, and the underdog drops
+  12. If the underdog wins, the underdog gains `32 × 0.64 ≈ 20`, and the
+  favorite drops 20.
 
 ### How the app calculates ratings
 
@@ -140,8 +137,11 @@ the following benefits:
 - The leaderboard always matches the game history.
 - To fix a wrongly recorded game, delete it in the History tab. All later
   ratings recalculate.
-- To change a constant, edit `START_ELO`, `PROVISIONAL_GAMES`, or `kFactor` in
-  `src/stats.js`. All historical ratings recalculate with the new values.
+- To change a constant, edit `START_ELO` or `K` in `src/stats.js`. All
+  historical ratings recalculate with the new values.
+
+The old DoPool app calculated ratings the same way, so imported games give the
+same ratings in both apps.
 
 The app stores ratings as decimals and rounds them for display.
 
