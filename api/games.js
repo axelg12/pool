@@ -19,3 +19,8 @@ export async function POST(request) {
     return Response.json({ error: `Could not save game: ${e.message}` }, { status: 400 });
   }
 }
+
+export async function DELETE(request) {
+  await sql`delete from games where id = ${new URL(request.url).searchParams.get('id')}`;
+  return new Response(null, { status: 204 });
+}

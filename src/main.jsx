@@ -3,11 +3,12 @@ import { createRoot } from 'react-dom/client';
 import { computeStats } from './stats.js';
 import './style.css';
 
-async function api(path, body) {
-  const res = await fetch(
-    `/api/${path}`,
-    body && { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) },
-  );
+async function api(path, method = 'GET', body) {
+  const res = await fetch(`/api/${path}`, {
+    method,
+    headers: { 'content-type': 'application/json' },
+    body: body && JSON.stringify(body),
+  });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Server error (${res.status})`);
   return data;
@@ -20,6 +21,8 @@ function clock(ms) {
   return `${h ? `${h}:${pad(Math.floor(s / 60) % 60)}` : Math.floor(s / 60)}:${pad(s % 60)}`;
 }
 const winPct = (p) => (p.played ? `${Math.round((100 * p.wins) / p.played)}%` : '–');
+const when = (iso) =>
+  new Date(iso).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const byName = (a, b) => a.name.localeCompare(b.name);
 
 // The ongoing game lives in localStorage, so it survives tab switches and reloads.
@@ -31,7 +34,7 @@ function storedGame() {
   }
 }
 
-const TABS = { game: 'Game', leaderboard: 'Leaderboard', players: 'Players' };
+const TABS = { game: 'Game', leaderboard: 'Leaderboard', history: 'History', players: 'Players' };
 
 function App() {
   const [tab, setTab] = useState('game');
@@ -67,22 +70,41 @@ function App() {
   const name = (id) => users.find((u) => u.id === id)?.name ?? '…';
   const elapsed = game ? (game.endedAt ?? now) - game.startedAt : 0;
 
-  async function addUser(newName) {
+  // Runs a server change and shows any error in the banner. Returns true on success.
+  async function run(change) {
     try {
-      const u = await api('users', { name: newName });
-      setUsers((us) => [...us, u].sort(byName));
+      await change();
       setError('');
       return true;
     } catch (e) {
       setError(e.message);
+      return false;
     }
   }
 
+  const addUser = (newName) =>
+    run(async () => {
+      const u = await api('users', 'POST', { name: newName });
+      setUsers((us) => [...us, u].sort(byName));
+    });
+
+  const renameUser = (id, newName) =>
+    run(async () => {
+      const u = await api('users', 'PATCH', { id, name: newName });
+      setUsers((us) => us.map((x) => (x.id === id ? u : x)).sort(byName));
+    });
+
+  const deleteGame = (id) =>
+    run(async () => {
+      await api(`games?id=${id}`, 'DELETE');
+      setGames((gs) => gs.filter((g) => g.id !== id));
+    });
+
   // On failure the game stays put, so tapping the winner again retries.
-  async function saveGame(winnerId) {
-    const loserId = game.players.find((id) => id !== winnerId);
-    try {
-      const g = await api('games', {
+  const saveGame = (winnerId) =>
+    run(async () => {
+      const loserId = game.players.find((id) => id !== winnerId);
+      const g = await api('games', 'POST', {
         winner_id: winnerId,
         loser_id: loserId,
         started_at: new Date(game.startedAt).toISOString(),
@@ -91,11 +113,7 @@ function App() {
       setGames((gs) => [...gs, g]);
       setSaved(`${name(winnerId)} beat ${name(loserId)} in ${clock(elapsed)}`);
       setGame(null);
-      setError('');
-    } catch (e) {
-      setError(e.message);
-    }
-  }
+    });
 
   return (
     <>
@@ -107,7 +125,8 @@ function App() {
         )}
         {tab === 'game' && <Game {...{ users, game, setGame, elapsed, name, saved, setSaved }} onSave={saveGame} />}
         {tab === 'leaderboard' && <Leaderboard stats={computeStats(users, games)} name={name} />}
-        {tab === 'players' && <Players users={users} onAdd={addUser} />}
+        {tab === 'history' && <History games={games} name={name} onDelete={deleteGame} />}
+        {tab === 'players' && <Players users={users} onAdd={addUser} onRename={renameUser} />}
       </main>
       <nav>
         {Object.entries(TABS).map(([key, label]) => (
@@ -263,11 +282,42 @@ function PlayerModal({ player: p, name, onClose }) {
   );
 }
 
-function Players({ users, onAdd }) {
+function History({ games, name, onDelete }) {
+  if (!games.length) return <p className="muted">No games yet.</p>;
+  const remove = (g) =>
+    confirm(`Delete ${name(g.winner_id)} vs ${name(g.loser_id)} on ${when(g.ended_at)}? All ratings recalculate without it.`) &&
+    onDelete(g.id);
+  return (
+    <section>
+      <h1>Recent games</h1>
+      <ul className="games">
+        {games.slice(-50).reverse().map((g) => (
+          <li key={g.id}>
+            <div>
+              <b>{name(g.winner_id)}</b> <span className="muted">beat</span> <b>{name(g.loser_id)}</b>
+              <div className="muted">
+                {when(g.ended_at)} · {clock(Date.parse(g.ended_at) - Date.parse(g.started_at))}
+              </div>
+            </div>
+            <button className="delete" onClick={() => remove(g)}>
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function Players({ users, onAdd, onRename }) {
   const [newName, setNewName] = useState('');
   const submit = async (e) => {
     e.preventDefault();
     if (await onAdd(newName.trim())) setNewName('');
+  };
+  const rename = (u) => {
+    const n = prompt(`Rename ${u.name}`, u.name)?.trim();
+    if (n && n !== u.name) onRename(u.id, n);
   };
   return (
     <section>
@@ -282,11 +332,12 @@ function Players({ users, onAdd }) {
         />
         <button className="big primary">Add player</button>
       </form>
+      {users.length > 0 && <p className="muted">Tap a player to rename them.</p>}
       <div className="grid">
         {users.map((u) => (
-          <div key={u.id} className="tile">
+          <button key={u.id} className="tile" onClick={() => rename(u)}>
             {u.name}
-          </div>
+          </button>
         ))}
       </div>
     </section>

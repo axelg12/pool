@@ -1,15 +1,16 @@
-/* Sized for an Android tablet: every tap target is at least 88px tall. */
+/* Sized for an Android tablet: every tap target is at least 72px tall. */
 :root {
-  --bg: #0d1f17;
-  --panel: #173527;
-  --felt: #1f6b45;
-  --felt-hi: #2b8a5a;
-  --text: #eef5f0;
-  --muted: #9db8a8;
-  --danger: #b8443a;
-  --gold: #f2c14e;
-  --line: #ffffff1a;
-  color-scheme: dark;
+  --bg: #f3f6f4;
+  --panel: #ffffff;
+  --accent: #2e9e62;
+  --accent-soft: #dff4e8;
+  --text: #1b2a22;
+  --muted: #67796e;
+  --danger: #d4483f;
+  --gold: #c98a00;
+  --line: #1b2a2214;
+  --shadow: 0 1px 3px #1b2a221f;
+  color-scheme: light;
   font: 20px/1.4 system-ui, sans-serif;
 }
 * { box-sizing: border-box; }
@@ -26,7 +27,7 @@ h1 { font-size: 2.2rem; margin: 0; }
 h1 span { color: var(--muted); font-weight: 400; }
 h2 { font-size: 2rem; margin: 0 0 4px; }
 .muted { color: var(--muted); }
-.saved { color: var(--gold); font-weight: 600; margin: 0 0 16px; }
+.saved { color: var(--accent); font-weight: 700; margin: 0 0 16px; }
 
 button { font: inherit; color: inherit; cursor: pointer; }
 button:disabled { opacity: 0.35; cursor: default; }
@@ -37,12 +38,13 @@ button:active:not(:disabled) { transform: scale(0.97); }
   border: 0;
   border-radius: 18px;
   background: var(--panel);
+  box-shadow: var(--shadow);
   font-size: 1.3rem;
   font-weight: 700;
 }
-.primary { background: var(--felt-hi); }
-.danger { background: var(--danger); }
-.ghost { background: none; color: var(--muted); margin-top: 24px; }
+.primary { background: var(--accent); color: #fff; }
+.danger { background: var(--danger); color: #fff; }
+.ghost { background: none; box-shadow: none; color: var(--muted); margin-top: 24px; }
 .error {
   display: block;
   width: 100%;
@@ -51,6 +53,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
   border: 0;
   border-radius: 14px;
   background: var(--danger);
+  color: #fff;
   text-align: left;
 }
 
@@ -72,11 +75,12 @@ header { display: flex; align-items: center; justify-content: space-between; gap
   border: 4px solid transparent;
   border-radius: 18px;
   background: var(--panel);
+  box-shadow: var(--shadow);
   font-size: 1.35rem;
   font-weight: 600;
   text-align: center;
 }
-.tile.on { border-color: var(--gold); background: var(--felt); }
+.tile.on { border-color: var(--accent); background: var(--accent-soft); }
 
 .live { text-align: center; padding-top: 4vh; }
 .timer {
@@ -87,13 +91,13 @@ header { display: flex; align-items: center; justify-content: space-between; gap
   line-height: 1;
 }
 .live .row .big { min-height: 120px; font-size: 1.6rem; }
-.winner { background: var(--felt-hi); font-size: 2rem !important; min-height: 180px !important; }
+.winner { background: var(--accent); color: #fff; font-size: 2rem !important; min-height: 180px !important; }
 
 table { width: 100%; border-collapse: collapse; font-size: 1.25rem; }
 th, td { padding: 22px 12px; text-align: center; font-variant-numeric: tabular-nums; }
 th { color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; }
 tbody tr { border-top: 1px solid var(--line); cursor: pointer; }
-tbody tr:active { background: var(--panel); }
+tbody tr:active { background: var(--accent-soft); }
 tbody tr:first-child td:first-child { color: var(--gold); font-weight: 800; }
 .left { text-align: left; }
 .elo { font-weight: 800; }
@@ -106,16 +110,37 @@ dialog {
   background: var(--panel);
   color: var(--text);
 }
-dialog::backdrop { background: #000b; }
+dialog::backdrop { background: #1b2a2299; }
 .sheet { padding: 36px; }
-.sheet .big { width: 100%; margin-top: 12px; background: var(--felt); }
+.sheet .big { width: 100%; margin-top: 12px; background: var(--accent-soft); box-shadow: none; }
 .rival { display: flex; flex-direction: column; gap: 2px; padding: 20px 0; border-top: 1px solid var(--line); }
 .rival b { font-size: 1.6rem; }
+
+.games { margin: 24px 0 0; padding: 0; list-style: none; }
+.games li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  font-size: 1.25rem;
+}
+.games .muted { font-size: 1rem; }
+.delete {
+  min-height: 72px;
+  padding: 0 28px;
+  border: 2px solid var(--danger);
+  border-radius: 18px;
+  background: none;
+  color: var(--danger);
+  font-weight: 700;
+}
 
 input {
   min-height: 88px;
   padding: 0 24px;
-  border: 2px solid var(--felt);
+  border: 2px solid var(--line);
   border-radius: 18px;
   background: var(--panel);
   color: var(--text);
@@ -123,7 +148,7 @@ input {
   font-size: 1.3rem;
   user-select: text;
 }
-input:focus { outline: none; border-color: var(--gold); }
+input:focus { outline: none; border-color: var(--accent); }
 form.row > button { flex: 0 0 auto; }
 
 nav {
@@ -147,5 +172,5 @@ nav button {
   font-size: 1.15rem;
   font-weight: 700;
 }
-nav button.active { color: var(--text); box-shadow: inset 0 5px var(--gold); }
-nav small { color: var(--gold); font-variant-numeric: tabular-nums; }
+nav button.active { color: var(--accent); box-shadow: inset 0 5px var(--accent); }
+nav small { color: var(--accent); font-variant-numeric: tabular-nums; }

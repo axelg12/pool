@@ -11,7 +11,9 @@ The app has the following tabs:
   tabs or reload the page.
 - Leaderboard: Elo, games played, wins, losses, and win percentage for each
   player. Tap a player to see who they beat most and who beats them most.
-- Players: add players.
+- History: the 50 most recent games, newest first. Tap **Delete** to remove a
+  wrongly recorded game.
+- Players: add players, and tap a player to rename them.
 
 ## Run locally
 
@@ -21,8 +23,8 @@ npm run dev
 ```
 
 `npm run dev` starts Vite with an in-memory fake API (in `vite.config.js`), so
-the UI works before a database exists. The fake API loses its data when the
-server restarts.
+the UI works before a database exists. The fake API starts with sample players
+and games, and resets when the server restarts.
 
 To run against the real Neon database, see
 [Use the real database locally](#use-the-real-database-locally).
@@ -39,6 +41,9 @@ To run against the real Neon database, see
 
 To use the app full screen on the tablet, open it in Chrome and select
 **Add to home screen** from the menu.
+
+The app has no login, so anyone who can open the URL can add players and
+delete games.
 
 ### Use the real database locally
 
@@ -117,8 +122,8 @@ every rating by replaying all games in the order they ended. This design has
 the following benefits:
 
 - The leaderboard always matches the game history.
-- To fix a wrongly recorded game, delete its row from the `games` table. All
-  later ratings recalculate.
+- To fix a wrongly recorded game, delete it in the History tab. All later
+  ratings recalculate.
 - To change a constant, edit `START_ELO`, `PROVISIONAL_GAMES`, or `kFactor` in
   `src/stats.js`. All historical ratings recalculate with the new values.
 
@@ -128,11 +133,11 @@ The app stores ratings as decimals and rounds them for display.
 
 | Path | Contents |
 | --- | --- |
-| `src/main.jsx` | The UI: tabs, game timer, leaderboard, player dialog. |
+| `src/main.jsx` | The UI: tabs, game timer, leaderboard, player dialog, game history. |
 | `src/stats.js` | Elo, win and loss records, and head-to-head results. |
 | `src/stats.test.js` | Tests for `src/stats.js`. Run them with `npm test`. |
-| `api/users.js` | `GET` lists players. `POST` adds a player. |
-| `api/games.js` | `GET` lists games. `POST` records a finished game. |
+| `api/users.js` | `GET` lists players. `POST` adds a player. `PATCH` renames a player. |
+| `api/games.js` | `GET` lists games. `POST` records a finished game. `DELETE ?id=ID` deletes a game. |
 | `schema.sql` | The Postgres tables for Neon. |
 
 The ongoing game lives in the browser's `localStorage` until it ends, so the
