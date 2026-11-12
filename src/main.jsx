@@ -272,8 +272,10 @@ function PlayerModal({ player: p, name, onClose }) {
         <p className="muted">
           {Math.round(p.elo)} Elo · {p.wins}W {p.losses}L · {winPct(p)} · avg game {p.played ? clock(p.time / p.played) : '–'}
         </p>
-        {top('wins', 'Most wins against')}
-        {top('losses', 'Most losses against')}
+        <div className="rivals">
+          {top('wins', 'Most wins against')}
+          {top('losses', 'Most losses against')}
+        </div>
         <button className="big" onClick={() => ref.current.close()}>
           Close
         </button>

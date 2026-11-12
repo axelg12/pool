@@ -1,4 +1,5 @@
-/* Sized for an Android tablet: every tap target is at least 72px tall. */
+/* Every size is in rem, so the root font size is the one knob: 15px on the
+   800×480 pool-table screen, growing to 20px on a full-size tablet. */
 :root {
   --bg: #f3f6f4;
   --panel: #ffffff;
@@ -11,7 +12,9 @@
   --line: #1b2a2214;
   --shadow: 0 1px 3px #1b2a221f;
   color-scheme: light;
-  font: 20px/1.4 system-ui, sans-serif;
+  font-family: system-ui, sans-serif;
+  font-size: clamp(15px, 2.5vmin, 20px);
+  line-height: 1.35;
 }
 * { box-sizing: border-box; }
 body {
@@ -22,80 +25,81 @@ body {
   touch-action: manipulation;
   user-select: none;
 }
-main { max-width: 1200px; margin: 0 auto; padding: 32px 32px calc(140px + env(safe-area-inset-bottom)); }
-h1 { font-size: 2.2rem; margin: 0; }
+main { max-width: 75rem; margin: 0 auto; padding: 1rem 1rem calc(4.5rem + env(safe-area-inset-bottom)); }
+h1 { font-size: 1.6rem; margin: 0; }
 h1 span { color: var(--muted); font-weight: 400; }
-h2 { font-size: 2rem; margin: 0 0 4px; }
+h2 { font-size: 1.5rem; margin: 0 0 0.25rem; }
 .muted { color: var(--muted); }
-.saved { color: var(--accent); font-weight: 700; margin: 0 0 16px; }
+.saved { color: var(--accent); font-weight: 700; margin: 0 0 0.5rem; }
 
 button { font: inherit; color: inherit; cursor: pointer; }
 button:disabled { opacity: 0.35; cursor: default; }
 button:active:not(:disabled) { transform: scale(0.97); }
 .big {
-  min-height: 88px;
-  padding: 0 40px;
+  min-height: 3.5rem;
+  padding: 0 1.5rem;
   border: 0;
-  border-radius: 18px;
+  border-radius: 0.75rem;
   background: var(--panel);
   box-shadow: var(--shadow);
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
 }
 .primary { background: var(--accent); color: #fff; }
 .danger { background: var(--danger); color: #fff; }
-.ghost { background: none; box-shadow: none; color: var(--muted); margin-top: 24px; }
+.ghost { background: none; box-shadow: none; color: var(--muted); margin-top: 0.5rem; }
 .error {
   display: block;
   width: 100%;
-  margin-bottom: 24px;
-  padding: 20px 24px;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
   border: 0;
-  border-radius: 14px;
+  border-radius: 0.6rem;
   background: var(--danger);
   color: #fff;
   text-align: left;
 }
 
-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.row { display: flex; gap: 24px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.row { display: flex; gap: 1rem; }
 .row > * { flex: 1; }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 32px;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.6rem;
+  margin-top: 1rem;
 }
 .tile {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 104px;
-  padding: 12px;
-  border: 4px solid transparent;
-  border-radius: 18px;
+  min-height: 3.75rem;
+  padding: 0.5rem;
+  border: 3px solid transparent;
+  border-radius: 0.75rem;
   background: var(--panel);
   box-shadow: var(--shadow);
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   font-weight: 600;
   text-align: center;
 }
 .tile.on { border-color: var(--accent); background: var(--accent-soft); }
 
-.live { text-align: center; padding-top: 4vh; }
+/* The live game screens size to the viewport height, so they fit without scrolling. */
+.live { text-align: center; }
 .timer {
-  margin: 4vh 0 6vh;
-  font-size: clamp(96px, 20vw, 220px);
+  margin: 2vh 0 4vh;
+  font-size: min(22vw, 30vh);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-.live .row .big { min-height: 120px; font-size: 1.6rem; }
-.winner { background: var(--accent); color: #fff; font-size: 2rem !important; min-height: 180px !important; }
+.live .row .big { min-height: max(3.5rem, 16vh); font-size: 1.3rem; }
+.live .row .winner { min-height: max(4.5rem, 32vh); background: var(--accent); color: #fff; font-size: 1.6rem; }
 
-table { width: 100%; border-collapse: collapse; font-size: 1.25rem; }
-th, td { padding: 22px 12px; text-align: center; font-variant-numeric: tabular-nums; }
-th { color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; }
+table { width: 100%; border-collapse: collapse; font-size: 1.05rem; }
+th, td { padding: 0.65rem 0.5rem; text-align: center; font-variant-numeric: tabular-nums; }
+th { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
 tbody tr { border-top: 1px solid var(--line); cursor: pointer; }
 tbody tr:active { background: var(--accent-soft); }
 tbody tr:first-child td:first-child { color: var(--gold); font-weight: 800; }
@@ -103,49 +107,51 @@ tbody tr:first-child td:first-child { color: var(--gold); font-weight: 800; }
 .elo { font-weight: 800; }
 
 dialog {
-  width: min(600px, 90vw);
+  width: min(32rem, 92vw);
   padding: 0;
   border: 0;
-  border-radius: 24px;
+  border-radius: 1rem;
   background: var(--panel);
   color: var(--text);
 }
 dialog::backdrop { background: #1b2a2299; }
-.sheet { padding: 36px; }
-.sheet .big { width: 100%; margin-top: 12px; background: var(--accent-soft); box-shadow: none; }
-.rival { display: flex; flex-direction: column; gap: 2px; padding: 20px 0; border-top: 1px solid var(--line); }
-.rival b { font-size: 1.6rem; }
+.sheet { padding: 1.25rem 1.5rem; }
+.sheet .big { width: 100%; margin-top: 0.5rem; background: var(--accent-soft); box-shadow: none; }
+.rivals { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; border-top: 1px solid var(--line); }
+.rival { display: flex; flex-direction: column; padding: 0.6rem 0; }
+.rival b { font-size: 1.3rem; }
 
-.games { margin: 24px 0 0; padding: 0; list-style: none; }
+.games { margin: 0.5rem 0 0; padding: 0; list-style: none; }
 .games li {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 16px 0;
+  gap: 1rem;
+  padding: 0.6rem 0;
   border-top: 1px solid var(--line);
-  font-size: 1.25rem;
+  font-size: 1.05rem;
 }
-.games .muted { font-size: 1rem; }
+.games .muted { font-size: 0.85rem; }
 .delete {
-  min-height: 72px;
-  padding: 0 28px;
+  min-height: 2.75rem;
+  padding: 0 1rem;
   border: 2px solid var(--danger);
-  border-radius: 18px;
+  border-radius: 0.6rem;
   background: none;
   color: var(--danger);
   font-weight: 700;
 }
 
 input {
-  min-height: 88px;
-  padding: 0 24px;
+  min-width: 0;
+  min-height: 3.5rem;
+  padding: 0 1rem;
   border: 2px solid var(--line);
-  border-radius: 18px;
+  border-radius: 0.75rem;
   background: var(--panel);
   color: var(--text);
   font: inherit;
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   user-select: text;
 }
 input:focus { outline: none; border-color: var(--accent); }
@@ -165,12 +171,12 @@ nav button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 96px;
+  height: 3.5rem;
   border: 0;
   background: none;
   color: var(--muted);
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 700;
 }
-nav button.active { color: var(--accent); box-shadow: inset 0 5px var(--accent); }
-nav small { color: var(--accent); font-variant-numeric: tabular-nums; }
+nav button.active { color: var(--accent); box-shadow: inset 0 3px var(--accent); }
+nav small { color: var(--accent); font-size: 0.8rem; font-variant-numeric: tabular-nums; }

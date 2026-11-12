@@ -1,7 +1,7 @@
 # Dohop pool
 
 A single-page app that keeps score of pool games at the Dohop office. It's
-built for an Android tablet next to the table: large tap targets, a bottom tab
+built for a small touchscreen next to the table: large tap targets, a bottom tab
 bar, and a game timer you can read from across the room.
 
 The app has the following tabs:
