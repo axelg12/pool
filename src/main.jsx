@@ -303,7 +303,7 @@ function Leaderboard({ stats, name }) {
           {stats.map((p, i) => (
             <tr key={p.id} tabIndex={0} onClick={() => setSelected(p)} onKeyDown={(e) => e.key === 'Enter' && setSelected(p)}>
               <td>{i + 1}</td>
-              <td className="left">{p.name}</td>
+              <td className="left">{Math.round(p.elo) === Math.round(stats[0].elo) && p.played ? '👑 ' : ''}{p.name}</td>
               <td className="elo">{Math.round(p.elo)}</td>
               <td>{p.played}</td>
               <td>{p.wins}</td>
