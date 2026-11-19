@@ -73,6 +73,8 @@ function App() {
   }, [game]);
 
   const name = (id) => users.find((u) => u.id === id)?.name ?? '…';
+  // Hidden players keep their games, so Elo uses all users, but nobody can pick them.
+  const active = users.filter((u) => !u.hidden);
   const elapsed = game?.startedAt ? (game.endedAt ?? game.pausedAt ?? now) - game.startedAt : 0;
 
   // Runs a server change and shows any error in the banner. Returns true on success.
@@ -138,10 +140,10 @@ function App() {
             {error} · tap to dismiss
           </button>
         )}
-        {tab === 'game' && <Game {...{ users, game, setGame, elapsed, name, result, setResult }} onSave={saveGame} />}
-        {tab === 'leaderboard' && <Leaderboard stats={computeStats(users, games)} name={name} />}
+        {tab === 'game' && <Game users={active} {...{ game, setGame, elapsed, name, result, setResult }} onSave={saveGame} />}
+        {tab === 'leaderboard' && <Leaderboard stats={computeStats(users, games).filter((p) => !p.hidden)} name={name} />}
         {tab === 'history' && <History games={games} name={name} onDelete={deleteGame} />}
-        {tab === 'players' && <Players users={users} onAdd={addUser} onRename={renameUser} />}
+        {tab === 'players' && <Players users={active} onAdd={addUser} onRename={renameUser} />}
       </main>
       <nav>
         {Object.entries(TABS).map(([key, label]) => (

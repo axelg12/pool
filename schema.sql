@@ -6,6 +6,8 @@ create table if not exists users (
   created_at timestamptz not null default now()
 );
 create unique index if not exists users_name_unique on users (lower(name));
+-- A hidden player can't be picked and isn't on the leaderboard, but their games still count.
+alter table users add column if not exists hidden boolean not null default false;
 
 create table if not exists games (
   id int generated always as identity primary key,

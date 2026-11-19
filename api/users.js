@@ -3,7 +3,7 @@ import { neon } from '@neondatabase/serverless';
 const sql = neon(process.env.DATABASE_URL);
 
 export async function GET() {
-  return Response.json(await sql`select id, name from users order by name`);
+  return Response.json(await sql`select id, name, hidden from users order by name`);
 }
 
 export const POST = (request) =>
