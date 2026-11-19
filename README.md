@@ -17,6 +17,11 @@ The app has the following tabs:
   wrongly recorded game.
 - Players: add players, and tap a player to rename them.
 
+To remove a player who has left, hide them in the Neon SQL editor with
+`update users set hidden = true where name = 'NAME';`. A hidden player is not
+on the Game, Leaderboard, or Players tab, but their games stay in History and
+still count toward everyone else's Elo.
+
 A game shorter than a minute was entered after it was played instead of
 timed. Its result counts for Elo and records, but the app ignores its time:
 the History tab shows no time for it, and average game time leaves it out.
