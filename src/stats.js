@@ -2,6 +2,8 @@
 export const START_ELO = 1000;
 export const K = 32;
 export const expected = (rating, opponent) => 1 / (1 + 10 ** ((opponent - rating) / 400));
+// Points a player gains by beating the opponent. The opponent loses the same amount.
+export const gain = (rating, opponent) => K * (1 - expected(rating, opponent));
 
 // A game under a minute was entered after it was played, not timed, so its
 // result counts but its time doesn't. Returns null for those games.
@@ -21,9 +23,7 @@ export function computeStats(users, games) {
   for (const g of ordered) {
     const w = players.get(g.winner_id);
     const l = players.get(g.loser_id);
-    // The winner scored 1 against an expected score of e, so gains K × (1 − e).
-    // The loser loses the same amount.
-    const change = K * (1 - expected(w.elo, l.elo));
+    const change = gain(w.elo, l.elo);
     w.elo += change;
     l.elo -= change;
     const ms = duration(g);
