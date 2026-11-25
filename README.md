@@ -17,8 +17,8 @@ The app has the following tabs:
   tabs or reload the page. While a game is on, tap **Sign up for the next
   game** to line up one or two players. One player plays the winner and two
   play each other. When you tap **Done** after the game is saved, or cancel the
-  game, the picker opens with them already picked. Tap **Next** as usual. The
-  sign-ups survive a reload.
+  game, the picker opens with them already picked. Tap **Next** as usual.
+  Players stay signed up until their game starts, even across a reload.
 - Leaderboard: Elo, games played, wins, losses, and win percentage for each
   player. Tap a player to see who they beat most and who beats them most.
 - History: the 50 most recent games, newest first. Tap **Delete** to remove a

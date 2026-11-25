@@ -87,6 +87,7 @@ function App() {
   const active = users.filter((u) => !u.hidden);
   const stats = computeStats(users, games);
   const rating = (id) => stats.find((p) => p.id === id)?.elo; // undefined until users load
+  const signedUp = next.filter((id) => active.some((u) => u.id === id)); // a hidden player can't play
   const elapsed = game?.startedAt ? (game.endedAt ?? game.pausedAt ?? now) - game.startedAt : 0;
 
   // Runs a server change and shows any error in the banner. Returns true on success.
@@ -153,7 +154,7 @@ function App() {
             {error} · tap to dismiss
           </button>
         )}
-        {tab === 'game' && <Game users={active} {...{ games, game, setGame, next, setNext, elapsed, name, rating, result, setResult }} onSave={saveGame} />}
+        {tab === 'game' && <Game users={active} {...{ games, game, setGame, setNext, elapsed, name, rating, result, setResult }} next={signedUp} onSave={saveGame} />}
         {tab === 'leaderboard' && <Leaderboard stats={stats.filter((p) => !p.hidden)} name={name} />}
         {tab === 'history' && <History games={games} name={name} onDelete={deleteGame} />}
         {tab === 'players' && <Players users={active} onAdd={addUser} onRename={renameUser} />}
@@ -175,7 +176,7 @@ function App() {
 }
 
 function Game({ users, games, game, setGame, next, setNext, elapsed, name, rating, result, setResult, onSave }) {
-  const [picked, setPicked] = useState([]);
+  const [picked, setPicked] = useState(null); // null: the picker shows the sign-ups
   const [saving, setSaving] = useState(false);
   const [signingUp, setSigningUp] = useState(false);
 
@@ -199,8 +200,8 @@ function Game({ users, games, game, setGame, next, setNext, elapsed, name, ratin
         <button
           className="big primary done"
           onClick={() => {
-            setPicked(next.length === 1 ? [next[0], w.id] : next);
-            setNext([]);
+            // One sign-up plays the winner. Two play each other, which the picker shows by default.
+            setPicked(next.length === 1 ? [next[0], w.id] : null);
             setResult(null);
           }}
         >
@@ -211,23 +212,23 @@ function Game({ users, games, game, setGame, next, setNext, elapsed, name, ratin
   }
 
   if (!game) {
+    const sel = picked ?? next;
     const start = () => {
-      setGame({ players: picked, breaker: breaker(games, picked) });
-      setNext((n) => n.filter((id) => !picked.includes(id)));
-      setPicked([]);
+      setGame({ players: sel, breaker: breaker(games, sel) });
+      setPicked(null);
     };
     return (
       <section>
         <header>
-          <h1>{picked.length ? `${name(picked[0])} vs ${picked[1] ? name(picked[1]) : '…'}` : 'Who is playing?'}</h1>
-          <button className="big primary" disabled={picked.length < 2} onClick={start}>
+          <h1>{sel.length ? `${name(sel[0])} vs ${sel[1] ? name(sel[1]) : '…'}` : 'Who is playing?'}</h1>
+          <button className="big primary" disabled={sel.length < 2} onClick={start}>
             Next
           </button>
         </header>
         {users.length < 2 && <p className="muted">Add at least two players in the Players tab.</p>}
         <div className="grid">
           {users.map((u) => (
-            <button key={u.id} className={`tile ${picked.includes(u.id) ? 'on' : ''}`} onClick={() => setPicked((p) => toggle(p, u.id))}>
+            <button key={u.id} className={`tile ${sel.includes(u.id) ? 'on' : ''}`} onClick={() => setPicked(toggle(sel, u.id))}>
               {u.name}
             </button>
           ))}
@@ -244,12 +245,12 @@ function Game({ users, games, game, setGame, next, setNext, elapsed, name, ratin
       setPicked(game.players);
       setGame(null);
     };
-    const cancel = () => {
-      if (!confirm('Discard this game? It will not be saved.')) return;
-      setPicked(next);
-      setNext([]);
-      setGame(null);
+    // Sign-ups stay on the list until their own game starts.
+    const startGame = () => {
+      setGame({ ...game, startedAt: Date.now() });
+      setNext((n) => n.filter((id) => !game.players.includes(id)));
     };
+    const queued = next.filter((id) => !game.players.includes(id));
     return (
       <section className="live">
         <h1>
@@ -265,7 +266,7 @@ function Game({ users, games, game, setGame, next, setNext, elapsed, name, ratin
         <div className={`timer ${game.pausedAt ? 'muted' : ''}`}>{clock(elapsed)}</div>
         {game.startedAt ? (
           <div className="row">
-            <button className="big danger" onClick={cancel}>
+            <button className="big danger" onClick={() => confirm('Discard this game? It will not be saved.') && setGame(null)}>
               Cancel game
             </button>
             {game.pausedAt ? (
@@ -286,15 +287,15 @@ function Game({ users, games, game, setGame, next, setNext, elapsed, name, ratin
             <button className="big" onClick={back}>
               ← Back
             </button>
-            <button className="big primary" onClick={() => setGame({ ...game, startedAt: Date.now() })}>
+            <button className="big primary" onClick={startGame}>
               Start game
             </button>
           </div>
         )}
         <button className="big ghost" onClick={() => setSigningUp(true)}>
-          {next.length ? `Next: ${name(next[0])} vs ${next[1] ? name(next[1]) : 'winner'}` : 'Sign up for the next game'}
+          {queued.length ? `Next: ${name(queued[0])} vs ${queued[1] ? name(queued[1]) : 'winner'}` : 'Sign up for the next game'}
         </button>
-        {signingUp && <SignUp users={users.filter((u) => !game.players.includes(u.id))} next={next} setNext={setNext} onClose={() => setSigningUp(false)} />}
+        {signingUp && <SignUp users={users.filter((u) => !game.players.includes(u.id))} next={queued} setNext={setNext} onClose={() => setSigningUp(false)} />}
       </section>
     );
   }
@@ -367,7 +368,7 @@ function SignUp({ users, next, setNext, onClose }) {
         <h2>Sign up for the next game</h2>
         <div className="grid">
           {users.map((u) => (
-            <button key={u.id} className={`tile ${next.includes(u.id) ? 'on' : ''}`} onClick={() => setNext((n) => toggle(n, u.id))}>
+            <button key={u.id} className={`tile ${next.includes(u.id) ? 'on' : ''}`} onClick={() => setNext(toggle(next, u.id))}>
               {u.name}
             </button>
           ))}
