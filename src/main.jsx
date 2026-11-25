@@ -25,14 +25,17 @@ const when = (iso) =>
   new Date(iso).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const byName = (a, b) => a.name.localeCompare(b.name);
 
-// The ongoing game lives in localStorage, so it survives tab switches and reloads.
-function storedGame() {
+// The ongoing game and the next game's sign-ups live in localStorage, so they survive tab switches and reloads.
+function stored(key) {
   try {
-    return JSON.parse(localStorage.getItem('game'));
+    return JSON.parse(localStorage.getItem(key));
   } catch {
     return null;
   }
 }
+
+// Adds or removes a player from a list of at most two.
+const toggle = (list, id) => (list.includes(id) ? list.filter((x) => x !== id) : list.length < 2 ? [...list, id] : list);
 
 // Resuming moves startedAt forward by the length of the pause, so neither the
 // timer nor the saved game counts paused time.
@@ -45,7 +48,8 @@ function App() {
   const [users, setUsers] = useState([]);
   const [games, setGames] = useState([]);
   // { players: [id, id], breaker: id, startedAt?, pausedAt?, endedAt? } in epoch ms. No startedAt until Start game.
-  const [game, setGame] = useState(storedGame);
+  const [game, setGame] = useState(() => stored('game'));
+  const [next, setNext] = useState(() => stored('next') ?? []); // ids signed up for the next game
   const [now, setNow] = useState(Date.now);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null); // the last saved game's Elo changes
@@ -71,6 +75,12 @@ function App() {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [game]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('next', JSON.stringify(next));
+    } catch {}
+  }, [next]);
 
   const name = (id) => users.find((u) => u.id === id)?.name ?? '…';
   // Hidden players keep their games, so Elo uses all users, but nobody can pick them.
@@ -143,7 +153,7 @@ function App() {
             {error} · tap to dismiss
           </button>
         )}
-        {tab === 'game' && <Game users={active} {...{ games, game, setGame, elapsed, name, rating, result, setResult }} onSave={saveGame} />}
+        {tab === 'game' && <Game users={active} {...{ games, game, setGame, next, setNext, elapsed, name, rating, result, setResult }} onSave={saveGame} />}
         {tab === 'leaderboard' && <Leaderboard stats={stats.filter((p) => !p.hidden)} name={name} />}
         {tab === 'history' && <History games={games} name={name} onDelete={deleteGame} />}
         {tab === 'players' && <Players users={active} onAdd={addUser} onRename={renameUser} />}
@@ -164,9 +174,10 @@ function App() {
   );
 }
 
-function Game({ users, games, game, setGame, elapsed, name, rating, result, setResult, onSave }) {
+function Game({ users, games, game, setGame, next, setNext, elapsed, name, rating, result, setResult, onSave }) {
   const [picked, setPicked] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [signingUp, setSigningUp] = useState(false);
 
   if (result) {
     const [w, l] = result.players;
@@ -185,7 +196,14 @@ function Game({ users, games, game, setGame, elapsed, name, rating, result, setR
             </div>
           ))}
         </div>
-        <button className="big primary done" onClick={() => setResult(null)}>
+        <button
+          className="big primary done"
+          onClick={() => {
+            setPicked(next.length === 1 ? [next[0], w.id] : next);
+            setNext([]);
+            setResult(null);
+          }}
+        >
           Done
         </button>
       </section>
@@ -193,24 +211,23 @@ function Game({ users, games, game, setGame, elapsed, name, rating, result, setR
   }
 
   if (!game) {
-    const toggle = (id) =>
-      setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < 2 ? [...p, id] : p));
-    const next = () => {
+    const start = () => {
       setGame({ players: picked, breaker: breaker(games, picked) });
+      setNext((n) => n.filter((id) => !picked.includes(id)));
       setPicked([]);
     };
     return (
       <section>
         <header>
           <h1>{picked.length ? `${name(picked[0])} vs ${picked[1] ? name(picked[1]) : '…'}` : 'Who is playing?'}</h1>
-          <button className="big primary" disabled={picked.length < 2} onClick={next}>
+          <button className="big primary" disabled={picked.length < 2} onClick={start}>
             Next
           </button>
         </header>
         {users.length < 2 && <p className="muted">Add at least two players in the Players tab.</p>}
         <div className="grid">
           {users.map((u) => (
-            <button key={u.id} className={`tile ${picked.includes(u.id) ? 'on' : ''}`} onClick={() => toggle(u.id)}>
+            <button key={u.id} className={`tile ${picked.includes(u.id) ? 'on' : ''}`} onClick={() => setPicked((p) => toggle(p, u.id))}>
               {u.name}
             </button>
           ))}
@@ -225,6 +242,12 @@ function Game({ users, games, game, setGame, elapsed, name, rating, result, setR
     // Before the timer starts, Back returns to the player picker with the same two players picked.
     const back = () => {
       setPicked(game.players);
+      setGame(null);
+    };
+    const cancel = () => {
+      if (!confirm('Discard this game? It will not be saved.')) return;
+      setPicked(next);
+      setNext([]);
       setGame(null);
     };
     return (
@@ -242,7 +265,7 @@ function Game({ users, games, game, setGame, elapsed, name, rating, result, setR
         <div className={`timer ${game.pausedAt ? 'muted' : ''}`}>{clock(elapsed)}</div>
         {game.startedAt ? (
           <div className="row">
-            <button className="big danger" onClick={() => confirm('Discard this game? It will not be saved.') && setGame(null)}>
+            <button className="big danger" onClick={cancel}>
               Cancel game
             </button>
             {game.pausedAt ? (
@@ -268,6 +291,10 @@ function Game({ users, games, game, setGame, elapsed, name, rating, result, setR
             </button>
           </div>
         )}
+        <button className="big ghost" onClick={() => setSigningUp(true)}>
+          {next.length ? `Next: ${name(next[0])} vs ${next[1] ? name(next[1]) : 'winner'}` : 'Sign up for the next game'}
+        </button>
+        {signingUp && <SignUp users={users.filter((u) => !game.players.includes(u.id))} next={next} setNext={setNext} onClose={() => setSigningUp(false)} />}
       </section>
     );
   }
@@ -328,6 +355,28 @@ function Leaderboard({ stats, name }) {
       </table>
       {selected && <PlayerModal player={selected} name={name} onClose={() => setSelected(null)} />}
     </section>
+  );
+}
+
+function SignUp({ users, next, setNext, onClose }) {
+  const ref = useRef();
+  useEffect(() => ref.current.showModal(), []);
+  return (
+    <dialog ref={ref} onClose={onClose} onClick={(e) => e.target === ref.current && ref.current.close()}>
+      <div className="sheet">
+        <h2>Sign up for the next game</h2>
+        <div className="grid">
+          {users.map((u) => (
+            <button key={u.id} className={`tile ${next.includes(u.id) ? 'on' : ''}`} onClick={() => setNext((n) => toggle(n, u.id))}>
+              {u.name}
+            </button>
+          ))}
+        </div>
+        <button className="big" onClick={() => ref.current.close()}>
+          Done
+        </button>
+      </div>
+    </dialog>
   );
 }
 
