@@ -176,6 +176,7 @@ The app stores ratings as decimals and rounds them for display.
 | `api/users.js` | `GET` lists players. `POST` adds a player. `PATCH` renames a player. |
 | `api/games.js` | `GET` lists games. `POST` records a finished game and who broke. `DELETE ?id=ID` deletes a game. |
 | `schema.sql` | The Postgres tables for Neon. |
+| `.github/workflows/test.yml` | Runs `npm test` and the production build on every pull request and every push to `main`. |
 
 The ongoing game and the next game's sign-ups live in the browser's
 `localStorage`, so they are only on the tablet. The server stores only finished
