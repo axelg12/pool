@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { computeStats, duration, gain } from './stats.js';
+import { breaker, computeStats, duration, gain } from './stats.js';
 import './style.css';
 
 async function api(path, method = 'GET', body) {
@@ -44,7 +44,7 @@ function App() {
   const [tab, setTab] = useState('game');
   const [users, setUsers] = useState([]);
   const [games, setGames] = useState([]);
-  // { players: [id, id], startedAt?, pausedAt?, endedAt? } in epoch ms. No startedAt until Start game.
+  // { players: [id, id], breaker: id, startedAt?, pausedAt?, endedAt? } in epoch ms. No startedAt until Start game.
   const [game, setGame] = useState(storedGame);
   const [now, setNow] = useState(Date.now);
   const [error, setError] = useState('');
@@ -116,6 +116,7 @@ function App() {
       const g = await api('games', 'POST', {
         winner_id: winnerId,
         loser_id: loserId,
+        breaker_id: game.breaker ?? null,
         started_at: new Date(game.startedAt).toISOString(),
         ended_at: new Date(game.endedAt).toISOString(),
       });
@@ -142,7 +143,7 @@ function App() {
             {error} · tap to dismiss
           </button>
         )}
-        {tab === 'game' && <Game users={active} {...{ game, setGame, elapsed, name, rating, result, setResult }} onSave={saveGame} />}
+        {tab === 'game' && <Game users={active} {...{ games, game, setGame, elapsed, name, rating, result, setResult }} onSave={saveGame} />}
         {tab === 'leaderboard' && <Leaderboard stats={stats.filter((p) => !p.hidden)} name={name} />}
         {tab === 'history' && <History games={games} name={name} onDelete={deleteGame} />}
         {tab === 'players' && <Players users={active} onAdd={addUser} onRename={renameUser} />}
@@ -163,7 +164,7 @@ function App() {
   );
 }
 
-function Game({ users, game, setGame, elapsed, name, rating, result, setResult, onSave }) {
+function Game({ users, games, game, setGame, elapsed, name, rating, result, setResult, onSave }) {
   const [picked, setPicked] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -195,7 +196,7 @@ function Game({ users, game, setGame, elapsed, name, rating, result, setResult, 
     const toggle = (id) =>
       setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < 2 ? [...p, id] : p));
     const next = () => {
-      setGame({ players: picked });
+      setGame({ players: picked, breaker: breaker(games, picked) });
       setPicked([]);
     };
     return (
@@ -237,6 +238,7 @@ function Game({ users, game, setGame, elapsed, name, rating, result, setResult, 
             <b className="gain">+{Math.round(gain(rb, ra))}</b>
           </p>
         )}
+        {game.breaker && <p className="stakes">🎱 {name(game.breaker)} breaks</p>}
         <div className={`timer ${game.pausedAt ? 'muted' : ''}`}>{clock(elapsed)}</div>
         {game.startedAt ? (
           <div className="row">
