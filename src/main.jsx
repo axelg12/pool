@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { computeStats, duration } from './stats.js';
+import { computeStats, duration, gain } from './stats.js';
 import './style.css';
 
 async function api(path, method = 'GET', body) {
@@ -75,6 +75,8 @@ function App() {
   const name = (id) => users.find((u) => u.id === id)?.name ?? '…';
   // Hidden players keep their games, so Elo uses all users, but nobody can pick them.
   const active = users.filter((u) => !u.hidden);
+  const stats = computeStats(users, games);
+  const rating = (id) => stats.find((p) => p.id === id)?.elo; // undefined until users load
   const elapsed = game?.startedAt ? (game.endedAt ?? game.pausedAt ?? now) - game.startedAt : 0;
 
   // Runs a server change and shows any error in the banner. Returns true on success.
@@ -140,8 +142,8 @@ function App() {
             {error} · tap to dismiss
           </button>
         )}
-        {tab === 'game' && <Game users={active} {...{ game, setGame, elapsed, name, result, setResult }} onSave={saveGame} />}
-        {tab === 'leaderboard' && <Leaderboard stats={computeStats(users, games).filter((p) => !p.hidden)} name={name} />}
+        {tab === 'game' && <Game users={active} {...{ game, setGame, elapsed, name, rating, result, setResult }} onSave={saveGame} />}
+        {tab === 'leaderboard' && <Leaderboard stats={stats.filter((p) => !p.hidden)} name={name} />}
         {tab === 'history' && <History games={games} name={name} onDelete={deleteGame} />}
         {tab === 'players' && <Players users={active} onAdd={addUser} onRename={renameUser} />}
       </main>
@@ -161,7 +163,7 @@ function App() {
   );
 }
 
-function Game({ users, game, setGame, elapsed, name, result, setResult, onSave }) {
+function Game({ users, game, setGame, elapsed, name, rating, result, setResult, onSave }) {
   const [picked, setPicked] = useState([]);
   const [saving, setSaving] = useState(false);
 
@@ -217,6 +219,7 @@ function Game({ users, game, setGame, elapsed, name, result, setResult, onSave }
   }
 
   const [a, b] = game.players;
+  const [ra, rb] = [rating(a), rating(b)];
   if (!game.endedAt) {
     // Before the timer starts, Back returns to the player picker with the same two players picked.
     const back = () => {
@@ -228,6 +231,12 @@ function Game({ users, game, setGame, elapsed, name, result, setResult, onSave }
         <h1>
           {name(a)} <span>vs</span> {name(b)}
         </h1>
+        {ra !== undefined && rb !== undefined && (
+          <p className="stakes">
+            Up for grabs: {name(a)} <b className="gain">+{Math.round(gain(ra, rb))}</b> · {name(b)}{' '}
+            <b className="gain">+{Math.round(gain(rb, ra))}</b>
+          </p>
+        )}
         <div className={`timer ${game.pausedAt ? 'muted' : ''}`}>{clock(elapsed)}</div>
         {game.startedAt ? (
           <div className="row">

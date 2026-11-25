@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeStats, expected } from './stats.js';
+import { computeStats, expected, gain, K } from './stats.js';
 
 const users = [{ id: 1, name: 'A' }, { id: 2, name: 'B' }, { id: 3, name: 'C' }];
 const game = (winner, loser, minute) => ({
@@ -47,4 +47,11 @@ test('records, head-to-head and time; games replay in end order', () => {
   assert.equal(s[1].timed, 4);
   // Same games in chronological order give the same ratings.
   assert.equal(s[1].elo, byId([game(1, 2, 0), game(2, 1, 2), game(1, 2, 4), game(3, 1, 9)])[1].elo);
+});
+
+test('gain: 16 at equal ratings, README example ≈ 12 and ≈ 20, and the two sides sum to K', () => {
+  assert.equal(gain(1000, 1000), 16);
+  assert.equal(Math.round(gain(1100, 1000)), 12);
+  assert.equal(Math.round(gain(1000, 1100)), 20);
+  assert.ok(Math.abs(gain(1100, 1000) + gain(1000, 1100) - K) < 1e-9);
 });

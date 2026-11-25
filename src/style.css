@@ -86,6 +86,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 
 /* The live game screens size to the viewport height, so they fit without scrolling. */
 .live { text-align: center; }
+.stakes { margin: 0.25rem 0 0; color: var(--muted); font-size: 1.1rem; }
 .timer {
   margin: 2vh 0 4vh;
   font-size: min(22vw, 30vh);
