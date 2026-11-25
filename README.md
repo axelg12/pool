@@ -14,7 +14,11 @@ The app has the following tabs:
   stops the timer, and paused time doesn't count toward the game time. End the
   game and tap the winner, or cancel to discard it. The app then shows how many
   Elo points each player gained or lost. The game keeps running when you switch
-  tabs or reload the page.
+  tabs or reload the page. While a game is on, tap **Sign up for the next
+  game** to line up one or two players. One player plays the winner and two
+  play each other. When you tap **Done** after the game is saved, or cancel the
+  game, the picker opens with them already picked. Tap **Next** as usual.
+  Players stay signed up until their game starts, even across a reload.
 - Leaderboard: Elo, games played, wins, losses, and win percentage for each
   player. Tap a player to see who they beat most and who beats them most.
 - History: the 50 most recent games, newest first. Tap **Delete** to remove a
@@ -166,12 +170,13 @@ The app stores ratings as decimals and rounds them for display.
 
 | Path | Contents |
 | --- | --- |
-| `src/main.jsx` | The UI: tabs, game timer, leaderboard, player dialog, game history. |
+| `src/main.jsx` | The UI: tabs, game timer, leaderboard, player dialog, sign-up dialog, game history. |
 | `src/stats.js` | Elo, win and loss records, and head-to-head results. |
 | `src/stats.test.js` | Tests for `src/stats.js`. Run them with `npm test`. |
 | `api/users.js` | `GET` lists players. `POST` adds a player. `PATCH` renames a player. |
 | `api/games.js` | `GET` lists games. `POST` records a finished game and who broke. `DELETE ?id=ID` deletes a game. |
 | `schema.sql` | The Postgres tables for Neon. |
 
-The ongoing game lives in the browser's `localStorage` until it ends, so the
-server stores only finished games.
+The ongoing game and the next game's sign-ups live in the browser's
+`localStorage`, so they are only on the tablet. The server stores only finished
+games.
