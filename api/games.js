@@ -7,12 +7,12 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const { winner_id, loser_id, started_at, ended_at } = await request.json();
+  const { winner_id, loser_id, started_at, ended_at, breaker_id = null } = await request.json();
   try {
     // Foreign keys and check constraints in schema.sql reject bad games.
     const [game] = await sql`
-      insert into games (winner_id, loser_id, started_at, ended_at)
-      values (${winner_id}, ${loser_id}, ${started_at}, ${ended_at})
+      insert into games (winner_id, loser_id, started_at, ended_at, breaker_id)
+      values (${winner_id}, ${loser_id}, ${started_at}, ${ended_at}, ${breaker_id})
       returning *`;
     return Response.json(game, { status: 201 });
   } catch (e) {

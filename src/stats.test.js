@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeStats, expected, gain, K } from './stats.js';
+import { breaker, computeStats, expected, gain, K } from './stats.js';
 
 const users = [{ id: 1, name: 'A' }, { id: 2, name: 'B' }, { id: 3, name: 'C' }];
 const game = (winner, loser, minute) => ({
@@ -54,4 +54,27 @@ test('gain: 16 at equal ratings, README example ≈ 12 and ≈ 20, and the two s
   assert.equal(Math.round(gain(1100, 1000)), 12);
   assert.equal(Math.round(gain(1000, 1100)), 20);
   assert.ok(Math.abs(gain(1100, 1000) + gain(1000, 1100) - K) < 1e-9);
+});
+
+const broke = (winner, loser, minute, breaker_id) => ({ ...game(winner, loser, minute), breaker_id });
+
+test('with no games, a random player of the pair breaks', () => {
+  assert.equal(breaker([], [1, 2], () => 0.1), 1);
+  assert.equal(breaker([], [1, 2], () => 0.9), 2);
+});
+
+test("whoever didn't break the pair's last game breaks, in either pair order", () => {
+  assert.equal(breaker([broke(1, 2, 0, 1)], [1, 2]), 2);
+  assert.equal(breaker([broke(1, 2, 0, 2)], [1, 2]), 1);
+  assert.equal(breaker([broke(1, 2, 0, 1)], [2, 1]), 2);
+});
+
+test("the latest game decides, even when the games are out of order", () => {
+  assert.equal(breaker([broke(1, 2, 5, 2), broke(1, 2, 0, 1)], [1, 2]), 1);
+});
+
+test('games with a third player or without a breaker are ignored', () => {
+  assert.equal(breaker([broke(1, 3, 9, 1), broke(2, 3, 9, 2)], [1, 2], () => 0.1), 1);
+  assert.equal(breaker([game(1, 2, 0)], [1, 2], () => 0.1), 1);
+  assert.equal(breaker([broke(1, 2, 0, 1), game(1, 2, 5)], [1, 2]), 2);
 });
