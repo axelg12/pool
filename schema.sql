@@ -18,3 +18,6 @@ create table if not exists games (
   check (winner_id <> loser_id),
   check (ended_at >= started_at)
 );
+
+-- Who broke. Null for games saved before the app tracked it.
+alter table games add column if not exists breaker_id int references users (id) check (breaker_id in (winner_id, loser_id));

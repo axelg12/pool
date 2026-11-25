@@ -41,3 +41,14 @@ export function computeStats(users, games) {
   }
   return [...players.values()].sort((a, b) => b.elo - a.elo || b.played - a.played);
 }
+
+// Players alternate breaks: whoever didn't break in the pair's last game
+// together breaks. Games saved before the app tracked breaks have no
+// breaker_id, so a pair with no recorded break gets a random breaker.
+export function breaker(games, [a, b], random = Math.random) {
+  const last = games
+    .filter((g) => g.breaker_id && [a, b].includes(g.winner_id) && [a, b].includes(g.loser_id))
+    .reduce((x, g) => (!x || Date.parse(g.ended_at) > Date.parse(x.ended_at) ? g : x), null);
+  if (last) return last.breaker_id === a ? b : a;
+  return random() < 0.5 ? a : b;
+}
